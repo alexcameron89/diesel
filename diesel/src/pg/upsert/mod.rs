@@ -4,5 +4,8 @@ mod on_conflict_extension;
 mod on_conflict_target;
 
 pub use self::on_conflict_actions::{do_nothing, do_update, excluded};
-pub use self::on_conflict_extension::OnConflictExtension;
+#[allow(deprecated)]
+#[cfg(feature = "with-deprecated")]
+pub use self::on_conflict_extension::DeprecatedOnConflictExtension;
+// pub use self::on_conflict_extension::OnConflictExtension;
 pub use self::on_conflict_target::on_constraint;

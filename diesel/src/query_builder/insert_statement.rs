@@ -113,6 +113,18 @@ impl<T, U, Op, Ret> BatchInsertStatement<T, U, Op, Ret> {
     fn into_insert_statement(self) -> InsertStatement<T, U, Op, Ret> {
         InsertStatement::new(self.target, self.records, self.operator, self.returning)
     }
+
+    pub(crate) fn replace_records<V, F>(self, f: F) -> BatchInsertStatement<T, V, Op, Ret>
+    where
+        F: FnOnce(U) -> V
+    {
+        BatchInsertStatement {
+            operator: self.operator,
+            target: self.target,
+            records: f(self.records),
+            returning: self.returning,
+        }
+    }
 }
 
 impl<T, U, Op> BatchInsertStatement<T, U, Op> {

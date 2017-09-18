@@ -340,10 +340,8 @@ fn upsert_with_no_changes_executes_do_nothing() {
     }
 
     let connection = connection_with_sean_and_tess_in_users_table();
-    let result = insert(
-        &User::new(1, "Sean")
-            .on_conflict(users::id, do_update().set(&Changes { hair_color: None })),
-    ).into(users::table)
+    let result = insert(&User::new(1, "Sean")).into(users::table)
+        .on_conflict(users::id, do_update().set(&Changes { hair_color: None }))
         .execute(&connection);
 
     assert_eq!(Ok(0), result);

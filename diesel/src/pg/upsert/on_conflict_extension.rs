@@ -1,8 +1,14 @@
 pub use super::on_conflict_clause::*;
 pub use super::on_conflict_target::*;
 
+use query_builder::insert_statement::BatchInsertStatement;
+use insertable::CanInsertInSingleQuery;
+use pg::Pg;
+
 /// Adds extension methods related to PG upsert
-pub trait OnConflictExtension {
+#[deprecated(since = "0.99.0")]
+#[cfg(feature = "with-deprecated")]
+pub trait DeprecatedOnConflictExtension {
     /// Adds `ON CONFLICT DO NOTHING` to the insert statement, without
     /// specifying any columns or constraints to restrict the conflict to.
     ///
@@ -187,4 +193,40 @@ pub trait OnConflictExtension {
     }
 }
 
-impl<T: ?Sized> OnConflictExtension for T {}
+#[allow(deprecated)]
+#[cfg(feature = "with-deprecated")]
+impl<T: ?Sized> DeprecatedOnConflictExtension for T
+where
+    for<'a> &'a T: CanInsertInSingleQuery<Pg>,
+{
+}
+
+impl<T, U, Op, Ret> BatchInsertStatement<T, U, Op, Ret> {
+    /// ```rust
+    /// # #[macro_use] extern crate diesel;
+    /// # #[macro_use] extern crate diesel_codegen;
+    /// # include!("on_conflict_docs_setup.rs");
+    /// #
+    /// # fn main() {
+    /// #     use self::users::dsl::*;
+    /// #     let conn = establish_connection();
+    /// #     conn.execute("TRUNCATE TABLE users").unwrap();
+    /// let user = User { id: 1, name: "Sean", };
+    ///
+    /// let inserted_row_count = diesel::insert(&user)
+    ///     .into(users)
+    ///     .on_conflict_do_nothing()
+    ///     .execute(&conn);
+    /// assert_eq!(Ok(1), inserted_row_count);
+    ///
+    /// let inserted_row_count = diesel::insert(&user)
+    ///     .into(users)
+    ///     .on_conflict_do_nothing()
+    ///     .execute(&conn);
+    /// assert_eq!(Ok(0), inserted_row_count);
+    /// # }
+    /// ```
+    pub fn on_conflict_do_nothing(self) -> BatchInsertStatement<T, OnConflictDoNothing<U>, Op, Ret> {
+        self.replace_records(OnConflictDoNothing::new)
+    }
+}

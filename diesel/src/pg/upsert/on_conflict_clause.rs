@@ -34,6 +34,7 @@ impl<Records, Target, Action> OnConflict<Records, Target, Action> {
     }
 }
 
+#[cfg(feature = "with-deprecated")]
 impl<'a, T, Tab> Insertable<Tab, Pg> for &'a OnConflictDoNothing<T>
 where
     Tab: Table,
@@ -51,7 +52,34 @@ where
     }
 }
 
+impl<T, Tab> Insertable<Tab, Pg> for OnConflictDoNothing<T>
+where
+    Tab: Table,
+    T: Insertable<Tab, Pg>,
+    T: UndecoratedInsertRecord<Tab>,
+{
+    type Values = OnConflictValues<T::Values, NoConflictTarget, DoNothing>;
+
+    fn values(self) -> Self::Values {
+        OnConflictValues {
+            values: self.0.values(),
+            target: NoConflictTarget,
+            action: DoNothing,
+        }
+    }
+}
+
+#[cfg(feature = "with-deprecated")]
 impl<'a, T> CanInsertInSingleQuery<Pg> for &'a OnConflictDoNothing<T>
+where
+    T: CanInsertInSingleQuery<Pg>,
+{
+    fn rows_to_insert(&self) -> usize {
+        self.0.rows_to_insert()
+    }
+}
+
+impl<T> CanInsertInSingleQuery<Pg> for OnConflictDoNothing<T>
 where
     T: CanInsertInSingleQuery<Pg>,
 {
