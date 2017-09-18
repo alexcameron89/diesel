@@ -229,4 +229,124 @@ impl<T, U, Op, Ret> BatchInsertStatement<T, U, Op, Ret> {
     pub fn on_conflict_do_nothing(self) -> BatchInsertStatement<T, OnConflictDoNothing<U>, Op, Ret> {
         self.replace_records(OnConflictDoNothing::new)
     }
+
+    /// Adds an `ON CONFLICT` to the insert statement, performing the action
+    /// specified by `Action` if a conflict occurs for `Target`.
+    ///
+    /// `Target` can be one of:
+    ///
+    /// - A column
+    /// - A tuple of columns
+    /// - [`on_constraint("constraint_name")`](fn.on_constraint.html)
+    ///
+    /// `Action` can be one of:
+    ///
+    /// - [`do_nothing()`](fn.do_nothing.html)
+    /// - [`do_update()`](fn.do_update.html)
+    ///
+    /// # Examples
+    ///
+    /// ### Specifying a column as the target
+    ///
+    /// ```rust
+    /// # #[macro_use] extern crate diesel;
+    /// # #[macro_use] extern crate diesel_codegen;
+    /// # include!("on_conflict_docs_setup.rs");
+    /// #
+    /// # fn main() {
+    /// #     use self::users::dsl::*;
+    /// use self::diesel::pg::upsert::*;
+    ///
+    /// #     let conn = establish_connection();
+    /// #     conn.execute("TRUNCATE TABLE users").unwrap();
+    /// conn.execute("CREATE UNIQUE INDEX users_name ON users (name)").unwrap();
+    /// let user = User { id: 1, name: "Sean", };
+    /// let same_name_different_id = User { id: 2, name: "Sean" };
+    /// let same_id_different_name = User { id: 1, name: "Pascal" };
+    ///
+    /// assert_eq!(Ok(1), diesel::insert(&user).into(users).execute(&conn));
+    ///
+    /// let inserted_row_count = diesel::insert(&same_name_different_id)
+    ///     .into(users)
+    ///     .on_conflict(name)
+    ///     .do_nothing()
+    ///     .execute(&conn);
+    /// assert_eq!(Ok(0), inserted_row_count);
+    ///
+    /// let pk_conflict_result = diesel::insert(&same_id_different_name)
+    ///     .into(users)
+    ///     .on_conflict(name)
+    ///     .do_nothing()
+    ///     .execute(&conn);
+    /// assert!(pk_conflict_result.is_err());
+    /// # }
+    /// ```
+    ///
+    /// ### Specifying multiple columns as the target
+    ///
+    /// ```ignore
+    /// # #[macro_use] extern crate diesel;
+    /// # #[macro_use] extern crate diesel_codegen;
+    /// # include!("../../doctest_setup.rs");
+    /// #
+    /// # table! {
+    /// #     users {
+    /// #         id -> Integer,
+    /// #         name -> VarChar,
+    /// #         hair_color -> VarChar,
+    /// #     }
+    /// # }
+    /// #
+    /// # #[derive(Clone, Copy, Insertable)]
+    /// # #[table_name="users"]
+    /// # struct User<'a> {
+    /// #     id: i32,
+    /// #     name: &'a str,
+    /// #     hair_color: &'a str,
+    /// # }
+    /// #
+    /// # fn main() {
+    /// #     use self::users::dsl::*;
+    /// use self::diesel::pg::upsert::*;
+    ///
+    /// #     let conn = establish_connection();
+    /// #     conn.execute("DROP TABLE users").unwrap();
+    /// #     conn.execute("CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT, hair_color TEXT)").unwrap();
+    /// conn.execute("CREATE UNIQUE INDEX users_name_hair_color ON users (name, hair_color)").unwrap();
+    /// let user = User { id: 1, name: "Sean", hair_color: "black" };
+    /// let same_name_different_hair_color = User { id: 2, name: "Sean", hair_color: "brown" };
+    /// let same_same_name_same_hair_color = User { id: 3, name: "Sean", hair_color: "black" };
+    ///
+    /// assert_eq!(Ok(1), diesel::insert(&user).into(users).execute(&conn));
+    ///
+    /// let inserted_row_count = diesel::insert(
+    ///     &same_name_different_hair_color.on_conflict((name, hair_color), do_nothing())
+    /// ).into(users).execute(&conn);
+    /// assert_eq!(Ok(1), inserted_row_count);
+    ///
+    /// let inserted_row_count = diesel::insert(
+    ///     &same_same_name_same_hair_color.on_conflict((name, hair_color), do_nothing())
+    /// ).into(users).execute(&conn);
+    /// assert_eq!(Ok(0), inserted_row_count);
+    /// # }
+    /// ```
+    ///
+    /// See the documentation for [`on_constraint`](fn.on_constraint.html) and [`do_update`] for
+    /// more examples.
+    fn on_conflict<Target>(self, target: Target) -> Self
+        -> IncompleteOnConflict<Target, Self>
+    {
+        unimplemented!()
+    }
+}
+
+pub struct IncompleteOnConflict<Target, Stmt> {
+    target: Target,
+    stmt: Stmt,
+}
+
+impl<Target, T, U, Op, Ret> IncompleteOnConflict<Target, BatchInsertStatement<T, U, Op, Ret>> {
+    fn do_nothing(self) -> BatchInsertStatement<T, OnConflict<U, Target, DoNothing>, Op, Ret> {
+        unimplemented!()
+    }
 }

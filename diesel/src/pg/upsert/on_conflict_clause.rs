@@ -88,8 +88,20 @@ where
     }
 }
 
+#[cfg(feature = "with-deprecated")]
 impl<'a, Records, Target, Action, Tab> Insertable<Tab, Pg>
     for &'a OnConflict<Records, Target, Action>
+where
+    Tab: Table,
+    Records: Insertable<Tab, Pg> + Copy,
+    Records: UndecoratedInsertRecord<Tab>,
+    Target: OnConflictTarget<Tab> + Clone,
+    Action: IntoConflictAction<Tab> + Copy,
+{
+    type Values = OnConflictValues<Records::Values, Target, Action::Action>;
+
+impl<Records, Target, Action, Tab> Insertable<Tab, Pg>
+    for OnConflict<Records, Target, Action>
 where
     Tab: Table,
     Records: Insertable<Tab, Pg> + Copy,
@@ -108,8 +120,19 @@ where
     }
 }
 
+#[cfg(feature = "with-deprecated")]
 impl<'a, Records, Target, Action> CanInsertInSingleQuery<Pg>
     for &'a OnConflict<Records, Target, Action>
+where
+    Records: CanInsertInSingleQuery<Pg>,
+{
+    fn rows_to_insert(&self) -> usize {
+        self.records.rows_to_insert()
+    }
+}
+
+impl<Records, Target, Action> CanInsertInSingleQuery<Pg>
+    for OnConflict<Records, Target, Action>
 where
     Records: CanInsertInSingleQuery<Pg>,
 {
