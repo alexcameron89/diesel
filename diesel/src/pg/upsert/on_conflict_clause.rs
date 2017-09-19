@@ -100,21 +100,29 @@ where
 {
     type Values = OnConflictValues<Records::Values, Target, Action::Action>;
 
-impl<Records, Target, Action, Tab> Insertable<Tab, Pg>
-    for OnConflict<Records, Target, Action>
+    fn values(self) -> Self::Values {
+        OnConflictValues {
+            values: self.records.values(),
+            target: self.target.clone(),
+            action: self.action.into_conflict_action(),
+        }
+    }
+}
+
+impl<Records, Target, Action, Tab> Insertable<Tab, Pg> for OnConflict<Records, Target, Action>
 where
     Tab: Table,
-    Records: Insertable<Tab, Pg> + Copy,
+    Records: Insertable<Tab, Pg>,
     Records: UndecoratedInsertRecord<Tab>,
-    Target: OnConflictTarget<Tab> + Clone,
-    Action: IntoConflictAction<Tab> + Copy,
+    Target: OnConflictTarget<Tab>,
+    Action: IntoConflictAction<Tab>,
 {
     type Values = OnConflictValues<Records::Values, Target, Action::Action>;
 
     fn values(self) -> Self::Values {
         OnConflictValues {
             values: self.records.values(),
-            target: self.target.clone(),
+            target: self.target,
             action: self.action.into_conflict_action(),
         }
     }
@@ -131,8 +139,7 @@ where
     }
 }
 
-impl<Records, Target, Action> CanInsertInSingleQuery<Pg>
-    for OnConflict<Records, Target, Action>
+impl<Records, Target, Action> CanInsertInSingleQuery<Pg> for OnConflict<Records, Target, Action>
 where
     Records: CanInsertInSingleQuery<Pg>,
 {

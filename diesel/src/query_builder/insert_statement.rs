@@ -116,7 +116,7 @@ impl<T, U, Op, Ret> BatchInsertStatement<T, U, Op, Ret> {
 
     pub(crate) fn replace_records<V, F>(self, f: F) -> BatchInsertStatement<T, V, Op, Ret>
     where
-        F: FnOnce(U) -> V
+        F: FnOnce(U) -> V,
     {
         BatchInsertStatement {
             operator: self.operator,

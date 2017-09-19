@@ -1,6 +1,7 @@
 pub use super::on_conflict_clause::*;
 pub use super::on_conflict_target::*;
 
+use super::on_conflict_actions::*;
 use query_builder::insert_statement::BatchInsertStatement;
 use insertable::CanInsertInSingleQuery;
 use pg::Pg;
@@ -226,7 +227,9 @@ impl<T, U, Op, Ret> BatchInsertStatement<T, U, Op, Ret> {
     /// assert_eq!(Ok(0), inserted_row_count);
     /// # }
     /// ```
-    pub fn on_conflict_do_nothing(self) -> BatchInsertStatement<T, OnConflictDoNothing<U>, Op, Ret> {
+    pub fn on_conflict_do_nothing(
+        self,
+    ) -> BatchInsertStatement<T, OnConflictDoNothing<U>, Op, Ret> {
         self.replace_records(OnConflictDoNothing::new)
     }
 
@@ -255,8 +258,6 @@ impl<T, U, Op, Ret> BatchInsertStatement<T, U, Op, Ret> {
     /// #
     /// # fn main() {
     /// #     use self::users::dsl::*;
-    /// use self::diesel::pg::upsert::*;
-    ///
     /// #     let conn = establish_connection();
     /// #     conn.execute("TRUNCATE TABLE users").unwrap();
     /// conn.execute("CREATE UNIQUE INDEX users_name ON users (name)").unwrap();
@@ -333,20 +334,21 @@ impl<T, U, Op, Ret> BatchInsertStatement<T, U, Op, Ret> {
     ///
     /// See the documentation for [`on_constraint`](fn.on_constraint.html) and [`do_update`] for
     /// more examples.
-    fn on_conflict<Target>(self, target: Target) -> Self
-        -> IncompleteOnConflict<Target, Self>
-    {
-        unimplemented!()
+    pub fn on_conflict<Target>(self, target: Target) -> IncompleteOnConflict<ConflictTarget<Target>, Self> {
+        IncompleteOnConflict { stmt: self, target: ConflictTarget(target) }
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub struct IncompleteOnConflict<Target, Stmt> {
     target: Target,
     stmt: Stmt,
 }
 
 impl<Target, T, U, Op, Ret> IncompleteOnConflict<Target, BatchInsertStatement<T, U, Op, Ret>> {
-    fn do_nothing(self) -> BatchInsertStatement<T, OnConflict<U, Target, DoNothing>, Op, Ret> {
+    pub fn do_nothing(self) -> BatchInsertStatement<T, OnConflict<U, Target, DoNothing>, Op, Ret>
+    {
         unimplemented!()
     }
 }
