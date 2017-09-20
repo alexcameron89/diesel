@@ -348,12 +348,10 @@ pub struct IncompleteOnConflict<Target, Stmt> {
 
 impl<Target, T, U, Op, Ret> IncompleteOnConflict<Target, BatchInsertStatement<T, U, Op, Ret>> {
     pub fn do_nothing(self) -> BatchInsertStatement<T, OnConflict<U, Target, DoNothing>, Op, Ret>
-        where U: Clone,
-              Target: Clone,
-              Self: Clone,
     {
-        self.clone().stmt.replace_records(|records: U| {
-            OnConflict::new(records.clone(), self.target.clone(), DoNothing)
+        let target = self.target;
+        self.stmt.replace_records(move |records: U| {
+            OnConflict::new(records, target, DoNothing)
         } )
     }
 }
